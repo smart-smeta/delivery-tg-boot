@@ -21,6 +21,8 @@ async def main():
     dp = Dispatcher()
 
     dp.message.register(start_handler, Command("start"))
+    dp.message.register(profile_handler, Command("profile"))
+    dp.message.register(help_handler, Command("help"))
 
     await dp.start_polling(bot)
 
