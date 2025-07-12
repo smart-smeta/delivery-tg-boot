@@ -15,6 +15,7 @@ def save_orders(orders):
         json.dump(orders, f, ensure_ascii=False, indent=4)
 
 def add_order(order):
+    order["created_at"] = datetime.now().isoformat()
     orders = load_orders()
     orders.append(order)
     save_orders(orders)
