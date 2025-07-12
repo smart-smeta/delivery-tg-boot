@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from bot.commands import (
     start_handler, profile_handler, help_handler, users_handler,
     order_start, order_description, order_address, order_phone, order_time,
-    order_confirmation, pay_handler
+    order_confirmation, pay_handler, myorders_handler, allorders_handler
 )
 from bot.states import OrderStates
 
@@ -42,6 +42,10 @@ async def main():
 
     # Оплата
     dp.message.register(pay_handler, Command("pay"))
+
+    # Просмотр заказов
+    dp.message.register(myorders_handler, Command("myorders"))
+    dp.message.register(allorders_handler, Command("allorders"))
 
     await dp.start_polling(bot)
 
