@@ -4,8 +4,7 @@ from aiogram.fsm.context import FSMContext
 
 from bot.states import OrderStates
 from models.user import register_user, load_users
-from models.order import add_order
-from models.order import load_orders, save_orders
+from models.order import add_order, load_orders, save_orders
 
 # /start
 async def start_handler(message: types.Message):
@@ -40,6 +39,7 @@ async def help_handler(message: types.Message):
         "/start — регистрация или возврат в главное меню\n"
         "/profile — Ваш профиль\n"
         "/order — оформить заказ\n"
+        "/pay — оплатить последний заказ\n"
         "/help — справка\n"
     )
     await message.answer(text)
@@ -110,12 +110,16 @@ async def order_confirmation(message: types.Message, state: FSMContext):
             "delivery_time": data.get("delivery_time"),
         }
         add_order(order)
-        await message.answer("Спасибо! Ваш заказ принят и передан на обработку. 🚚")
+        await message.answer(
+            "Спасибо! Ваш заказ принят и передан на обработку. 🚚\n"
+            "Чтобы оплатить заказ, используйте команду /pay."
+        )
         await state.clear()
     else:
         await message.answer("Заказ отменён. Чтобы оформить новый, используйте /order.")
         await state.clear()
-# Команда /pay
+
+# /pay — оплата заказа (эмуляция)
 async def pay_handler(message: types.Message):
     user_id = message.from_user.id
     orders = load_orders()
@@ -124,7 +128,6 @@ async def pay_handler(message: types.Message):
         await message.answer("У вас нет неоплаченных заказов.")
         return
     last_order = unpaid_orders[-1]
-    # Здесь может быть реальная интеграция с платежной системой, пока — эмуляция
     last_order["paid"] = True
     save_orders(orders)
     await message.answer(
