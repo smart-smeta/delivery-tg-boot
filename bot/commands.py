@@ -1,6 +1,7 @@
 from aiogram import types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from aiogram.utils.markdown import hbold
 
 from bot.states import OrderStates
 from models.user import register_user, load_users
@@ -32,6 +33,8 @@ async def profile_handler(message: types.Message):
     await message.answer(text)
 
 # /help
+ADMIN_IDS = [12345678]  # замените на свой user_id
+
 async def help_handler(message: types.Message):
     text = (
         "🤖 Я бот доставки!\n\n"
@@ -40,13 +43,14 @@ async def help_handler(message: types.Message):
         "/profile — Ваш профиль\n"
         "/order — оформить заказ\n"
         "/pay — оплатить последний заказ\n"
+        "/myorders — мои заказы\n"
         "/help — справка\n"
     )
+    if message.from_user.id in ADMIN_IDS:
+        text += "/allorders — все заказы (админ)\n"
     await message.answer(text)
 
 # /users (для администратора, опционально)
-ADMIN_IDS = [12345678]  # замените на свой user_id
-
 async def users_handler(message: types.Message):
     if message.from_user.id not in ADMIN_IDS:
         await message.answer("⛔️ Доступ запрещён.")
@@ -134,3 +138,43 @@ async def pay_handler(message: types.Message):
         "Ваш заказ был оплачен! Спасибо за доверие.\n"
         "Статус заказа: ОПЛАЧЕНО ✅"
     )
+
+# /myorders — список заказов пользователя
+async def myorders_handler(message: types.Message):
+    user_id = message.from_user.id
+    orders = load_orders()
+    user_orders = [o for o in orders if o.get("user_id") == user_id]
+    if not user_orders:
+        await message.answer("У вас нет заказов.")
+        return
+    text = hbold("Ваши заказы:") + "\n"
+    for idx, o in enumerate(user_orders, 1):
+        text += (
+            f"\n#{idx} — {'ОПЛАЧЕНО ✅' if o.get('paid') else 'Ожидает оплаты ❌'}\n"
+            f"📝 {o.get('description')}\n"
+            f"🏠 {o.get('address')}\n"
+            f"⏰ {o.get('delivery_time')}\n"
+            f"Создан: {o.get('created_at','-')}\n"
+        )
+    await message.answer(text)
+
+# /allorders — только для администратора
+async def allorders_handler(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        await message.answer("⛔️ Доступ запрещён.")
+        return
+    orders = load_orders()
+    if not orders:
+        await message.answer("Заказов пока нет.")
+        return
+    text = hbold("Все заказы:") + "\n"
+    for idx, o in enumerate(orders, 1):
+        text += (
+            f"\n#{idx} — {'ОПЛАЧЕНО ✅' if o.get('paid') else 'Ожидает оплаты ❌'}\n"
+            f"Пользователь: {o.get('user_id')}\n"
+            f"📝 {o.get('description')}\n"
+            f"🏠 {o.get('address')}\n"
+            f"⏰ {o.get('delivery_time')}\n"
+            f"Создан: {o.get('created_at','-')}\n"
+        )
+    await message.answer(text)
