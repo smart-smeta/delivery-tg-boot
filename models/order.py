@@ -16,7 +16,7 @@ def save_orders(orders):
 
 def add_order(order):
     order["created_at"] = datetime.now().isoformat()
-    order["paid"] = False  # Новое поле
+    order["paid"] = False  # Новое поле для оплаты
     orders = load_orders()
     orders.append(order)
     save_orders(orders)
