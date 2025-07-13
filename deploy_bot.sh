@@ -26,7 +26,7 @@ if [ ! -f .env ]; then
     echo "BOT_TOKEN=ваш_токен" > .env
 fi
 
-# 5. Запуск бота
+# 5. Запуск бота из поддиректории bot
 echo "Для запуска бота выполните:"
 echo "source venv/bin/activate"
-echo "python main.py"
+echo "python bot/main.py"
