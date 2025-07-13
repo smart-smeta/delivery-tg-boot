@@ -11,7 +11,7 @@ REQUIRED_PACKAGES=("aiogram" "python-dotenv" "loguru" "aiofiles")
 # 1. Установить системные зависимости
 echo "Установка системных зависимостей..."
 sudo apt update
-sudo apt install -y python3 python3-pip python3-venv git
+sudo apt install -y python3 python3-pip python3-venv git nano
 
 # 2. Клонировать/обновить репозиторий
 if [ ! -d "$REPO_DIR" ]; then
@@ -68,17 +68,28 @@ if [ ! -f "$ENV_FILE" ]; then
         echo "# Дополнительные настройки"
         echo "# DEBUG_MODE=True"
     } > "$ENV_FILE"
+    
     echo ""
-    echo "Пожалуйста, отредактируйте файл .env перед запуском бота!"
-    echo "Добавьте ваш BOT_TOKEN и ADMIN_ID"
+    echo "Файл .env создан. Пожалуйста, отредактируйте его и добавьте реальный токен бота!"
+    echo "Запустите скрипт снова после настройки токена"
+    exit 1
 else
     echo ".env файл уже существует."
+    
+    # Проверка токена
+    if grep -q "BOT_TOKEN=ваш_токен_бота" "$ENV_FILE"; then
+        echo "ОШИБКА: Вы забыли установить реальный токен бота в .env файле!"
+        echo "Пожалуйста, отредактируйте .env файл:"
+        echo "nano $ENV_FILE"
+        echo "Замените 'ваш_токен_бота' на реальный токен"
+        exit 1
+    fi
 fi
 
 # 6. Проверка установки зависимостей
 echo "Проверка установленных пакетов:"
 pip list
 
-# 7. Запуск бота из корня проекта
+# 7. Запуск бота
 echo "Запуск бота..."
 python -m bot.main
