@@ -6,7 +6,7 @@ set -e
 REPO_DIR="delivery-tg-boot"
 REPO_URL="https://github.com/smart-smeta/delivery-tg-boot.git"
 VENV_DIR="venv"
-REQUIRED_PACKAGES=("aiogram" "python-dotenv" "loguru" "aiofiles")  # Добавляем все обязательные пакеты
+REQUIRED_PACKAGES=("aiogram" "python-dotenv" "loguru" "aiofiles")
 
 # 1. Установить системные зависимости
 echo "Установка системных зависимостей..."
@@ -79,7 +79,6 @@ fi
 echo "Проверка установленных пакетов:"
 pip list
 
-# 7. Запуск бота
+# 7. Запуск бота из корня проекта
 echo "Запуск бота..."
-cd bot
-python main.py
+python -m bot.main
