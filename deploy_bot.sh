@@ -10,24 +10,40 @@ REQUIRED_PACKAGES=("aiogram" "python-dotenv" "loguru" "aiofiles")
 
 # Функция для интерактивного создания .env файла
 create_env_file() {
-    echo "Создание конфигурационного файла .env..."
     echo ""
+    echo "=== НАСТРОЙКА КОНФИГУРАЦИИ БОТА ==="
     
-    # Запрос токена бота
-    read -p "Введите токен вашего Telegram бота (получите у @BotFather): " BOT_TOKEN
-    while [ -z "$BOT_TOKEN" ]; do
-        echo "Токен бота не может быть пустым!"
-        read -p "Введите токен вашего Telegram бота: " BOT_TOKEN
+    # Запрос токена бота с валидацией
+    while true; do
+        echo ""
+        read -p "Введите токен вашего Telegram бота (получите у @BotFather): " BOT_TOKEN
+        
+        # Проверка формата токена (примерный формат: 1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ123456)
+        if [[ "$BOT_TOKEN" =~ ^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$ ]]; then
+            break
+        else
+            echo ""
+            echo "ОШИБКА: Неверный формат токена!"
+            echo "Пример правильного токена: 1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"
+            echo "Пожалуйста, проверьте токен и попробуйте снова."
+        fi
     done
     
     # Запрос ID администратора
-    read -p "Введите ваш Telegram ID (можно узнать у @userinfobot): " ADMIN_ID
-    while [ -z "$ADMIN_ID" ]; do
-        echo "ID администратора не может быть пустым!"
-        read -p "Введите ваш Telegram ID: " ADMIN_ID
+    echo ""
+    while true; do
+        read -p "Введите ваш Telegram ID (можно узнать у @userinfobot): " ADMIN_ID
+        
+        # Проверка что ID состоит только из цифр
+        if [[ "$ADMIN_ID" =~ ^[0-9]+$ ]]; then
+            break
+        else
+            echo "ОШИБКА: ID должен состоять только из цифр!"
+        fi
     done
     
     # Запрос URL базы данных
+    echo ""
     read -p "Введите URL базы данных [по умолчанию: sqlite:///bot/database.db]: " DATABASE_URL
     DATABASE_URL=${DATABASE_URL:-"sqlite:///bot/database.db"}
     
@@ -43,8 +59,21 @@ create_env_file() {
     } > ".env"
     
     echo ""
-    echo "Файл .env успешно создан!"
-    echo "Вы всегда можете отредактировать его вручную: nano .env"
+    echo "=== КОНФИГУРАЦИЯ УСПЕШНО СОХРАНЕНА ==="
+    echo "Файл .env создан. Вы всегда можете отредактировать его: nano .env"
+}
+
+# Функция для проверки токена в .env
+check_bot_token() {
+    # Извлекаем токен из файла
+    local TOKEN=$(grep '^BOT_TOKEN=' .env | cut -d '=' -f2-)
+    
+    # Проверяем формат токена
+    if [[ "$TOKEN" =~ ^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$ ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # 1. Установить системные зависимости
@@ -101,13 +130,17 @@ if [ ! -f "$ENV_FILE" ]; then
 else
     echo ".env файл уже существует."
     
-    # Проверка токена
-    if grep -q "BOT_TOKEN=ваш_токен_бота" "$ENV_FILE" || ! grep -q "BOT_TOKEN=" "$ENV_FILE"; then
-        echo "ВНИМАНИЕ: Токен бота не настроен или установлен по умолчанию!"
-        read -p "Хотите обновить конфигурацию сейчас? [y/N]: " choice
+    # Проверяем токен на валидность
+    if ! check_bot_token; then
+        echo ""
+        echo "ОШИБКА: Токен в .env файле неверный или имеет неверный формат!"
+        read -p "Хотите обновить конфигурацию? [Y/n]: " choice
         
-        if [[ "$choice" =~ ^[Yy]$ ]]; then
+        if [[ "$choice" =~ ^[Yy]?$ ]]; then
             create_env_file
+        else
+            echo "Пожалуйста, проверьте токен вручную: nano .env"
+            exit 1
         fi
     fi
 fi
@@ -118,4 +151,13 @@ pip list
 
 # 7. Запуск бота
 echo "Запуск бота..."
-python -m bot.main
+if python -c "import asyncio; from aiogram import Bot; from dotenv import load_dotenv; import os; load_dotenv(); token = os.getenv('BOT_TOKEN'); asyncio.run(Bot(token=token).get_me())" &> /dev/null; then
+    echo "Токен валиден! Запускаем бота..."
+    python -m bot.main
+else
+    echo ""
+    echo "ОШИБКА: Неверный токен бота!"
+    echo "Проверьте токен в .env файле и попробуйте снова."
+    echo "Вы можете редактировать файл: nano .env"
+    exit 1
+fi
