@@ -8,10 +8,49 @@ REPO_URL="https://github.com/smart-smeta/delivery-tg-boot.git"
 VENV_DIR="venv"
 REQUIRED_PACKAGES=("aiogram" "python-dotenv" "loguru" "aiofiles")
 
+# Функция для интерактивного создания .env файла
+create_env_file() {
+    echo "Создание конфигурационного файла .env..."
+    echo ""
+    
+    # Запрос токена бота
+    read -p "Введите токен вашего Telegram бота (получите у @BotFather): " BOT_TOKEN
+    while [ -z "$BOT_TOKEN" ]; do
+        echo "Токен бота не может быть пустым!"
+        read -p "Введите токен вашего Telegram бота: " BOT_TOKEN
+    done
+    
+    # Запрос ID администратора
+    read -p "Введите ваш Telegram ID (можно узнать у @userinfobot): " ADMIN_ID
+    while [ -z "$ADMIN_ID" ]; do
+        echo "ID администратора не может быть пустым!"
+        read -p "Введите ваш Telegram ID: " ADMIN_ID
+    done
+    
+    # Запрос URL базы данных
+    read -p "Введите URL базы данных [по умолчанию: sqlite:///bot/database.db]: " DATABASE_URL
+    DATABASE_URL=${DATABASE_URL:-"sqlite:///bot/database.db"}
+    
+    # Создание файла .env
+    {
+        echo "# Конфигурация бота"
+        echo "BOT_TOKEN=$BOT_TOKEN"
+        echo "ADMIN_ID=$ADMIN_ID"
+        echo "DATABASE_URL=$DATABASE_URL"
+        echo ""
+        echo "# Дополнительные настройки"
+        echo "# DEBUG_MODE=True"
+    } > ".env"
+    
+    echo ""
+    echo "Файл .env успешно создан!"
+    echo "Вы всегда можете отредактировать его вручную: nano .env"
+}
+
 # 1. Установить системные зависимости
 echo "Установка системных зависимостей..."
 sudo apt update
-sudo apt install -y python3 python3-pip python3-venv git nano
+sudo apt install -y python3 python3-pip python3-venv git
 
 # 2. Клонировать/обновить репозиторий
 if [ ! -d "$REPO_DIR" ]; then
@@ -58,31 +97,18 @@ pip freeze > requirements.txt
 # 5. Настройка .env файла
 ENV_FILE=".env"
 if [ ! -f "$ENV_FILE" ]; then
-    echo "Создание .env файла с настройками бота..."
-    {
-        echo "# Конфигурация бота"
-        echo "BOT_TOKEN=ваш_токен_бота"
-        echo "ADMIN_ID=ваш_telegram_id"
-        echo "DATABASE_URL=sqlite:///bot/database.db"
-        echo ""
-        echo "# Дополнительные настройки"
-        echo "# DEBUG_MODE=True"
-    } > "$ENV_FILE"
-    
-    echo ""
-    echo "Файл .env создан. Пожалуйста, отредактируйте его и добавьте реальный токен бота!"
-    echo "Запустите скрипт снова после настройки токена"
-    exit 1
+    create_env_file
 else
     echo ".env файл уже существует."
     
     # Проверка токена
-    if grep -q "BOT_TOKEN=ваш_токен_бота" "$ENV_FILE"; then
-        echo "ОШИБКА: Вы забыли установить реальный токен бота в .env файле!"
-        echo "Пожалуйста, отредактируйте .env файл:"
-        echo "nano $ENV_FILE"
-        echo "Замените 'ваш_токен_бота' на реальный токен"
-        exit 1
+    if grep -q "BOT_TOKEN=ваш_токен_бота" "$ENV_FILE" || ! grep -q "BOT_TOKEN=" "$ENV_FILE"; then
+        echo "ВНИМАНИЕ: Токен бота не настроен или установлен по умолчанию!"
+        read -p "Хотите обновить конфигурацию сейчас? [y/N]: " choice
+        
+        if [[ "$choice" =~ ^[Yy]$ ]]; then
+            create_env_file
+        fi
     fi
 fi
 
