@@ -16,7 +16,7 @@ from bot.commands import (
 from bot.states import OrderStates
 
 load_dotenv()
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 logging.basicConfig(level=logging.INFO)
 
 async def main():
